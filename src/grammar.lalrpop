@@ -1,0 +1,39 @@
+use crate::ast::*;
+
+grammar;
+
+match {
+  r"\s*" => {},
+  r"//[^\n\r]*[\n\r]*" => {},
+  r"/\*([^*]|\*+[^*/])*\*+/" => {},
+  _
+}
+
+pub Program: Program = <exp: Exp> => Program { <> };
+
+Exp: Exp = {
+  <num: Number> => Exp::ConstExp(num),
+
+  "-" "(" <exp1: Exp> "," <exp2: Exp> ")" => 
+    Exp::DiffExp(Box::new(exp1), Box::new(exp2)),
+
+  "zero?" "(" <exp: Exp> ")" => Exp::IsZeroExp(Box::new(exp)),
+
+  "if" <exp1: Exp> "then" <exp2: Exp> "else" <exp3: Exp> => 
+    Exp::IfExp(Box::new(exp1), Box::new(exp2), Box::new(exp3)),
+
+  <id: Ident> => Exp::VarExp(id),
+  
+  "let" <id: Ident> "=" <exp1: Exp> "in" <body: Exp> =>
+    Exp::LetExp(id, Box::new(exp1), Box::new(body)),
+}
+
+Number: i32 = <num: IntConst> => <>;
+
+Ident: String = r"[_a-zA-Z][_a-zA-Z0-9]*" => <>.to_string();
+
+IntConst: i32 = {
+  r"[1-9][0-9]*" => i32::from_str_radix(<>, 10).unwrap(),
+  r"0[0-7]*" => i32::from_str_radix(<>, 8).unwrap(),
+  r"0[xX][0-9a-fA-F]+" => i32::from_str_radix(&<>[2..], 16).unwrap(),
+}
