@@ -1,9 +1,11 @@
+use std::fmt;
+
 #[derive(Debug)]
 pub struct Program {
     pub exp: Exp,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Exp {
     ConstExp(i32),
 
@@ -37,4 +39,78 @@ pub enum Exp {
     LetStarExp(Vec<(String, Box<Exp>)>, Box<Exp>),
     
     UnpackExp(Vec<String>, Box<Exp>, Box<Exp>),
+
+    ProcExp(String, Box<Exp>),
+    CallExp(Box<Exp>, Box<Exp>),
+}
+
+impl fmt::Display for Exp {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Exp::ConstExp(n) => write!(f, "{}", n),
+            Exp::VarExp(v) => write!(f, "{}", v),
+
+            Exp::MinusExp(e) => write!(f, "minus({})", e),
+            Exp::DiffExp(e1, e2) => write!(f, "-({}, {})", e1, e2),
+            Exp::AddExp(e1, e2) => write!(f, "+({}, {})", e1, e2),
+            Exp::MulExp(e1, e2) => write!(f, "*({}, {})", e1, e2),
+            Exp::DivExp(e1, e2) => write!(f, "/({}, {})", e1, e2),
+
+            Exp::IsZeroExp(e) => write!(f, "zero?({})", e),
+            Exp::IsEqualExp(e1, e2) => write!(f, "equal?({}, {})", e1, e2),
+            Exp::IsGreaterExp(e1, e2) => write!(f, "greater?({}, {})", e1, e2),
+            Exp::IsLessExp(e1, e2) => write!(f, "less?({}, {})", e1, e2),
+
+            Exp::EmptyListExp => write!(f, "emptylist"),
+            Exp::ConsExp(e1, e2) => write!(f, "cons({}, {})", e1, e2),
+            Exp::CarExp(e) => write!(f, "car({})", e),
+            Exp::CdrExp(e) => write!(f, "cdr({})", e),
+            Exp::IsNullExp(e) => write!(f, "null?({})", e),
+            Exp::ListExp(exps) => {
+                write!(f, "list(")?;
+                for (i, e) in exps.iter().enumerate() {
+                    if i > 0 { write!(f, ", ")?; }
+                    write!(f, "{}", e)?;
+                }
+                write!(f, ")")
+            }
+
+            Exp::PrintExp(e) => write!(f, "print({})", e),
+
+            Exp::IfExp(e1, e2, e3) => write!(f, "if {} then {} else {}", e1, e2, e3),
+            Exp::CondExp(clauses) => {
+                write!(f, "cond")?;
+                for (test, res) in clauses {
+                    write!(f, " {} ==> {}", test, res)?;
+                }
+                write!(f, " end")
+            }
+
+            Exp::LetExp(bindings, body) => {
+                write!(f, "let")?;
+                for (var, e) in bindings {
+                    write!(f, " {} = {}", var, e)?;
+                }
+                write!(f, " in {}", body)
+            }
+            Exp::LetStarExp(bindings, body) => {
+                write!(f, "let*")?;
+                for (var, e) in bindings {
+                    write!(f, " {} = {}", var, e)?;
+                }
+                write!(f, " in {}", body)
+            }
+
+            Exp::UnpackExp(vars, e, body) => {
+                write!(f, "unpack")?;
+                for var in vars {
+                    write!(f, " {}", var)?;
+                }
+                write!(f, " = {} in {}", e, body)
+            }
+
+            Exp::ProcExp(var, body) => write!(f, "proc({}) {}", var, body),
+            Exp::CallExp(rator, rand) => write!(f, "({} {})", rator, rand),
+        }
+    }
 }

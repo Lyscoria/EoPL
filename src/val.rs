@@ -1,19 +1,27 @@
 use core::fmt;
 use std::rc::Rc;
 
-use crate::err::RuntimeError;
+use crate::{ast::Exp, env::Env, err::RuntimeError};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum ExpVal {
     Int(i32),
     Bool(bool),
-    List(Option<Rc<ListNode>>)
+    List(Option<Rc<ListNode>>),
+    Proc(Proc),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub struct ListNode {
     pub head: ExpVal,
     pub tail: Option<Rc<ListNode>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Proc {
+    pub var: String,
+    pub body: Exp,
+    pub env: Env,
 }
 
 pub type DenVal = ExpVal;
@@ -27,17 +35,24 @@ impl ExpVal {
         ExpVal::Bool(b)
     }
 
-    pub fn expval_to_num(&self) -> Result<i32, RuntimeError> {
+    pub fn as_num(&self) -> Result<i32, RuntimeError> {
         match self {
             ExpVal::Int(num) => Ok(*num),
             _ => Err(RuntimeError::TypeError(format!("Expected Int, but got {:?}", self)))
         }
     }
 
-    pub fn expval_to_bool(&self) -> Result<bool, RuntimeError> {
+    pub fn as_bool(&self) -> Result<bool, RuntimeError> {
         match self {
             ExpVal::Bool(b) => Ok(*b),
             _ => Err(RuntimeError::TypeError(format!("Expected Bool, but got {:?}", self)))
+        }
+    }
+
+    pub fn as_proc(&self) -> Result<Proc, RuntimeError> {
+        match self {
+            ExpVal::Proc(f) => Ok(f.clone()),
+            _ => Err(RuntimeError::TypeError(format!("Expected Proc, but got {:?}", self)))
         }
     }
 
@@ -84,6 +99,12 @@ impl ExpVal {
     }
 }
 
+impl fmt::Display for Proc {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "proc({}) {}", self.var, self.body)
+    }
+}
+
 impl fmt::Display for ExpVal {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -101,6 +122,7 @@ impl fmt::Display for ExpVal {
                 }
                 write!(f, ")")
             }
+            ExpVal::Proc(p) => write!(f, "{}", p),
         }
     }
 }

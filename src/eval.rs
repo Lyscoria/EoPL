@@ -1,4 +1,4 @@
-use crate::{ast::{Exp, Program}, env::Env, err::RuntimeError, val::ExpVal};
+use crate::{ast::{Exp, Program}, env::Env, err::RuntimeError, val::{ExpVal, Proc}};
 
 pub fn value_of_program(program: &Program) -> Result<ExpVal, RuntimeError> {
     let init_env = Env::empty()
@@ -16,57 +16,57 @@ pub fn value_of(exp: &Exp, env: &Env) -> Result<ExpVal, RuntimeError> {
 
         Exp::MinusExp(exp1) => {
             let val = value_of(exp1, env)?;
-            Ok(ExpVal::Int(-val.expval_to_num()?))
+            Ok(ExpVal::Int(-val.as_num()?))
         }
 
         Exp::DiffExp(exp1, exp2) => {
             let val1 = value_of(exp1, env)?;
             let val2 = value_of(exp2, env)?;
-            Ok(ExpVal::Int(val1.expval_to_num()? - val2.expval_to_num()?))
+            Ok(ExpVal::Int(val1.as_num()? - val2.as_num()?))
         }
 
         Exp::AddExp(exp1, exp2) => {
             let val1 = value_of(exp1, env)?;
             let val2 = value_of(exp2, env)?;
-            Ok(ExpVal::Int(val1.expval_to_num()? + val2.expval_to_num()?))
+            Ok(ExpVal::Int(val1.as_num()? + val2.as_num()?))
         }
 
         Exp::MulExp(exp1, exp2) => {
             let val1 = value_of(exp1, env)?;
             let val2 = value_of(exp2, env)?;
-            Ok(ExpVal::Int(val1.expval_to_num()? * val2.expval_to_num()?))
+            Ok(ExpVal::Int(val1.as_num()? * val2.as_num()?))
         }
 
         Exp::DivExp(exp1, exp2) => {
             let val1 = value_of(exp1, env)?;
             let val2 = value_of(exp2, env)?;
-            if val2.expval_to_num()? == 0 {
+            if val2.as_num()? == 0 {
                 return Err(RuntimeError::DivisonByZero("Division by zero".to_string()));
             }
-            Ok(ExpVal::Int(val1.expval_to_num()? / val2.expval_to_num()?))
+            Ok(ExpVal::Int(val1.as_num()? / val2.as_num()?))
         }
 
         Exp::IsZeroExp(exp) => {
             let val = value_of(exp, env)?;
-            Ok(ExpVal::Bool(val.expval_to_num()? == 0))
+            Ok(ExpVal::Bool(val.as_num()? == 0))
         }
 
         Exp::IsEqualExp(exp1, exp2) => {
             let val1 = value_of(exp1, env)?;
             let val2 = value_of(exp2, env)?;
-            Ok(ExpVal::Bool(val1.expval_to_num()? == val2.expval_to_num()?))
+            Ok(ExpVal::Bool(val1.as_num()? == val2.as_num()?))
         }
 
         Exp::IsGreaterExp(exp1, exp2) => {
             let val1 = value_of(exp1, env)?;
             let val2 = value_of(exp2, env)?;
-            Ok(ExpVal::Bool(val1.expval_to_num()? > val2.expval_to_num()?))
+            Ok(ExpVal::Bool(val1.as_num()? > val2.as_num()?))
         }
 
         Exp::IsLessExp(exp1, exp2) => {
             let val1 = value_of(exp1, env)?;
             let val2 = value_of(exp2, env)?;
-            Ok(ExpVal::Bool(val1.expval_to_num()? < val2.expval_to_num()?))
+            Ok(ExpVal::Bool(val1.as_num()? < val2.as_num()?))
         }
 
         Exp::EmptyListExp => {
@@ -109,7 +109,7 @@ pub fn value_of(exp: &Exp, env: &Env) -> Result<ExpVal, RuntimeError> {
         }
 
         Exp::IfExp(exp1, exp2, exp3) => {
-            let val = value_of(exp1, env)?.expval_to_bool()?;
+            let val = value_of(exp1, env)?.as_bool()?;
             if val {
                 value_of(exp2, env)
             } else {
@@ -120,7 +120,7 @@ pub fn value_of(exp: &Exp, env: &Env) -> Result<ExpVal, RuntimeError> {
         Exp::CondExp(clauses) => {
             for (test, res) in clauses {
                 let val = value_of(test, env)?;
-                if val.expval_to_bool()? == true {
+                if val.as_bool()? == true {
                     return value_of(res, env);
                 }
             }
@@ -158,6 +158,21 @@ pub fn value_of(exp: &Exp, env: &Env) -> Result<ExpVal, RuntimeError> {
                 return Err(RuntimeError::UnpackError(format!("Unpack: length inconsistent")));
             }
             value_of(body, &new_env)
+        }
+
+        Exp::ProcExp(var, body) => {
+            Ok(ExpVal::Proc(Proc{
+                var: var.clone(), 
+                body: *body.clone(),
+                env: env.clone()
+            }))
+        }
+
+        Exp::CallExp(rator, rand) => {
+            let proc = value_of(rator, env)?.as_proc()?;
+            let arg = value_of(rand, env)?;
+            let new_env = proc.env.extend(proc.var, arg);
+            value_of(&proc.body, &new_env)
         }
     }
 }

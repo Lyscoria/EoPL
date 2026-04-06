@@ -23,7 +23,7 @@ fn run_test(source: &str, expected: Expected) {
         Expected::Num(n) => {
             let p = program.unwrap_or_else(|_| panic!("Parse error: {}", source));
             let res = value_of_program(&p).unwrap_or_else(|_| panic!("Runtime error: {}", source));
-            let num = res.expval_to_num().unwrap();
+            let num = res.as_num().unwrap();
             assert_eq!(num, n, "Source: {}", source);
         }
     }
@@ -79,3 +79,18 @@ eopl_test!(eval_let_rhs, "let x = -(4,1) in -(x,1)", 2);
 eopl_test!(simple_nested_let, "let x = 3 in let y = 4 in -(x,y)", -1);
 eopl_test!(check_shadowing_in_body, "let x = 3 in let x = 4 in x", 4);
 eopl_test!(check_shadowing_in_rhs, "let x = 3 in let x = -(x,1) in x", 2);
+
+eopl_test!(apply_proc_in_rator_pos, "(proc(x) -(x,1) 30)", 29);
+eopl_test!(apply_simple_proc, "let f = proc (x) -(x,1) in (f 30)", 29);
+eopl_test!(let_to_proc_1, "(proc(f)(f 30) proc(x)-(x,1))", 29);
+
+eopl_test!(nested_procs, "((proc (x) proc (y) -(x,y) 5) 6)", -1);
+eopl_test!(nested_procs2, "let f = proc(x) proc (y) -(x,y) in ((f -(10,5)) 6)", -1);
+
+eopl_test!(y_combinator_1, "
+let fix = proc (f)
+            let d = proc (x) proc (z) ((f (x x)) z)
+            in proc (n) ((f (d d)) n)
+in let t4m = proc (f) proc(x) if zero?(x) then 0 else -((f -(x,1)), minus(4))
+in let times4 = (fix t4m)
+   in (times4 3)", 12);

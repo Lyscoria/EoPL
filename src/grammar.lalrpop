@@ -19,11 +19,11 @@ Comma<T>: Vec<T> = {
 };
 
 Binding: (String, Box<Exp>) = {
-  <id: Ident> "=" <e: Exp> => (id, Box::new(e)),
+  <id: Ident> "=" <exp: Exp> => (id, Box::new(exp)),
 };
 
 CondClause: (Box<Exp>, Box<Exp>) = {
-  <e1: Exp> "==>" <e2: Exp> => (Box::new(e1), Box::new(e2)),
+  <exp1: Exp> "==>" <exp2: Exp> => (Box::new(exp1), Box::new(exp2)),
 };
 
 pub Program: Program = <exp: Exp> => Program { <> };
@@ -84,8 +84,15 @@ Exp: Exp = {
   "let*" <bindings: Binding*> "in" <body: Exp> => 
     Exp::LetStarExp(bindings, Box::new(body)),
 
-  "unpack" <ids: Ident*> "=" <e: Exp> "in" <body: Exp> => 
-    Exp::UnpackExp(ids, Box::new(e), Box::new(body)),
+  "unpack" <ids: Ident*> "=" <exp: Exp> "in" <body: Exp> => 
+    Exp::UnpackExp(ids, Box::new(exp), Box::new(body)),
+
+  "proc" "(" <var: Ident> ")" <body: Exp> =>
+    Exp::ProcExp(var, Box::new(body)),
+
+  "(" <rator: Exp> <rand: Exp> ")" =>
+    Exp::CallExp(Box::new(rator), Box::new(rand)),
+
 }
 
 Number: i32 = <num: IntConst> => <>;

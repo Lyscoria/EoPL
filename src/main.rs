@@ -15,7 +15,7 @@ fn main() {
     let program = parser.parse(&content).expect("Parse Error!");
     
     match value_of_program(&program) {
-        Ok(val) => println!("{:?}", val),
+        Ok(val) => println!("{}", val),
         Err(e) => eprintln!("Runtime Error: {:?}", e),
     }
 }
