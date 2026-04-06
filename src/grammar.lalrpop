@@ -9,6 +9,23 @@ match {
   _
 }
 
+Comma<T>: Vec<T> = {
+  <mut v: (<T> ",")*> <e: T?> => {
+    if let Some(last) = e {
+      v.push(last);
+    }
+    v
+  }
+};
+
+Binding: (String, Box<Exp>) = {
+  <id: Ident> "=" <e: Exp> => (id, Box::new(e)),
+};
+
+CondClause: (Box<Exp>, Box<Exp>) = {
+  <e1: Exp> "==>" <e2: Exp> => (Box::new(e1), Box::new(e2)),
+};
+
 pub Program: Program = <exp: Exp> => Program { <> };
 
 Exp: Exp = {
@@ -17,15 +34,58 @@ Exp: Exp = {
   "-" "(" <exp1: Exp> "," <exp2: Exp> ")" => 
     Exp::DiffExp(Box::new(exp1), Box::new(exp2)),
 
+  "minus" "(" <exp: Exp> ")" => Exp::MinusExp(Box::new(exp)),
+
+  "+" "(" <exp1: Exp> "," <exp2: Exp> ")" => 
+    Exp::AddExp(Box::new(exp1), Box::new(exp2)),
+
+  "*" "(" <exp1: Exp> "," <exp2: Exp> ")" => 
+    Exp::MulExp(Box::new(exp1), Box::new(exp2)),
+
+  "/" "(" <exp1: Exp> "," <exp2: Exp> ")" => 
+    Exp::DivExp(Box::new(exp1), Box::new(exp2)),
+
   "zero?" "(" <exp: Exp> ")" => Exp::IsZeroExp(Box::new(exp)),
+
+  "equal?" "(" <exp1: Exp> "," <exp2: Exp> ")" =>
+    Exp::IsEqualExp(Box::new(exp1), Box::new(exp2)),
+
+  "greater?" "(" <exp1: Exp> "," <exp2: Exp> ")" =>
+    Exp::IsGreaterExp(Box::new(exp1), Box::new(exp2)),
+
+  "less?" "(" <exp1: Exp> "," <exp2: Exp> ")" =>
+    Exp::IsLessExp(Box::new(exp1), Box::new(exp2)),
+
+  "emptylist" => Exp::EmptyListExp,
+
+  "cons" "(" <exp1: Exp> "," <exp2: Exp> ")" => 
+      Exp::ConsExp(Box::new(exp1), Box::new(exp2)),
+
+  "car" "(" <exp: Exp> ")" => Exp::CarExp(Box::new(exp)),
+
+  "cdr" "(" <exp: Exp> ")" => Exp::CdrExp(Box::new(exp)),
+
+  "null?" "(" <exp: Exp> ")" => Exp::IsNullExp(Box::new(exp)),
+
+  "list" "(" <exps: Comma<Exp>> ")" => Exp::ListExp(exps),
+
+  "print" "(" <exp: Exp> ")" => Exp::PrintExp(Box::new(exp)),
 
   "if" <exp1: Exp> "then" <exp2: Exp> "else" <exp3: Exp> => 
     Exp::IfExp(Box::new(exp1), Box::new(exp2), Box::new(exp3)),
 
   <id: Ident> => Exp::VarExp(id),
   
-  "let" <id: Ident> "=" <exp1: Exp> "in" <body: Exp> =>
-    Exp::LetExp(id, Box::new(exp1), Box::new(body)),
+  "cond" <clauses: CondClause*> "end" => Exp::CondExp(clauses),
+
+  "let" <bindings: Binding*> "in" <body: Exp> => 
+    Exp::LetExp(bindings, Box::new(body)),
+
+  "let*" <bindings: Binding*> "in" <body: Exp> => 
+    Exp::LetStarExp(bindings, Box::new(body)),
+
+  "unpack" <ids: Ident*> "=" <e: Exp> "in" <body: Exp> => 
+    Exp::UnpackExp(ids, Box::new(e), Box::new(body)),
 }
 
 Number: i32 = <num: IntConst> => <>;

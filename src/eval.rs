@@ -14,15 +14,98 @@ pub fn value_of(exp: &Exp, env: &Env) -> Result<ExpVal, RuntimeError> {
 
         Exp::VarExp(var) => env.apply(var),
 
+        Exp::MinusExp(exp1) => {
+            let val = value_of(exp1, env)?;
+            Ok(ExpVal::Int(-val.expval_to_num()?))
+        }
+
         Exp::DiffExp(exp1, exp2) => {
             let val1 = value_of(exp1, env)?;
             let val2 = value_of(exp2, env)?;
             Ok(ExpVal::Int(val1.expval_to_num()? - val2.expval_to_num()?))
         }
 
+        Exp::AddExp(exp1, exp2) => {
+            let val1 = value_of(exp1, env)?;
+            let val2 = value_of(exp2, env)?;
+            Ok(ExpVal::Int(val1.expval_to_num()? + val2.expval_to_num()?))
+        }
+
+        Exp::MulExp(exp1, exp2) => {
+            let val1 = value_of(exp1, env)?;
+            let val2 = value_of(exp2, env)?;
+            Ok(ExpVal::Int(val1.expval_to_num()? * val2.expval_to_num()?))
+        }
+
+        Exp::DivExp(exp1, exp2) => {
+            let val1 = value_of(exp1, env)?;
+            let val2 = value_of(exp2, env)?;
+            if val2.expval_to_num()? == 0 {
+                return Err(RuntimeError::DivisonByZero("Division by zero".to_string()));
+            }
+            Ok(ExpVal::Int(val1.expval_to_num()? / val2.expval_to_num()?))
+        }
+
         Exp::IsZeroExp(exp) => {
             let val = value_of(exp, env)?;
             Ok(ExpVal::Bool(val.expval_to_num()? == 0))
+        }
+
+        Exp::IsEqualExp(exp1, exp2) => {
+            let val1 = value_of(exp1, env)?;
+            let val2 = value_of(exp2, env)?;
+            Ok(ExpVal::Bool(val1.expval_to_num()? == val2.expval_to_num()?))
+        }
+
+        Exp::IsGreaterExp(exp1, exp2) => {
+            let val1 = value_of(exp1, env)?;
+            let val2 = value_of(exp2, env)?;
+            Ok(ExpVal::Bool(val1.expval_to_num()? > val2.expval_to_num()?))
+        }
+
+        Exp::IsLessExp(exp1, exp2) => {
+            let val1 = value_of(exp1, env)?;
+            let val2 = value_of(exp2, env)?;
+            Ok(ExpVal::Bool(val1.expval_to_num()? < val2.expval_to_num()?))
+        }
+
+        Exp::EmptyListExp => {
+            Ok(ExpVal::List(None))
+        }
+
+        Exp::ConsExp(exp1, exp2) => {
+            let val1 = value_of(exp1, env)?;
+            let val2 = value_of(exp2, env)?;
+            Ok(ExpVal::cons(val1, val2)?)
+        }
+
+        Exp::CarExp(exp) => {
+            let val = value_of(exp, env)?;
+            Ok(val.car()?)
+        }
+
+        Exp::CdrExp(exp) => {
+            let val = value_of(exp, env)?;
+            Ok(val.cdr()?)
+        }
+
+        Exp::IsNullExp(exp) => {
+            let val = value_of(exp, env)?;
+            Ok(ExpVal::Bool(val.is_null()?))
+        }
+
+        Exp::ListExp(exps) => {
+            let mut val = ExpVal::empty_list();
+            for exp in exps.iter().rev() {
+                val = ExpVal::cons(value_of(exp, env)?, val)?;
+            }
+            Ok(val)
+        }
+
+        Exp::PrintExp(exp) => {
+            let val = value_of(exp, env)?;
+            println!("{}", val);
+            Ok(ExpVal::Int(1))
         }
 
         Exp::IfExp(exp1, exp2, exp3) => {
@@ -34,9 +117,47 @@ pub fn value_of(exp: &Exp, env: &Env) -> Result<ExpVal, RuntimeError> {
             }
         }
 
-        Exp::LetExp(var, exp1, exp2) => {
-            let val = value_of(exp1, env)?;
-            value_of(exp2, &env.extend(var.to_string(), val))
+        Exp::CondExp(clauses) => {
+            for (test, res) in clauses {
+                let val = value_of(test, env)?;
+                if val.expval_to_bool()? == true {
+                    return value_of(res, env);
+                }
+            }
+            Err(RuntimeError::CondError("No cond clause matched.".to_string()))
+        }
+
+        Exp::LetExp(bindings, body) => {
+            let mut new_env = env.clone();
+            for (var, exp) in bindings {
+                let val = value_of(exp, env)?;
+                new_env = new_env.extend(var.to_string(), val);
+            }
+            value_of(body, &new_env)
+        }
+
+        Exp::LetStarExp(bindings, body) => {
+            let mut new_env = env.clone();
+            for (var, exp) in bindings {
+                let val = value_of(exp, &new_env)?;
+                new_env = new_env.extend(var.to_string(), val);
+            }
+            value_of(body, &new_env)
+        }
+
+        Exp::UnpackExp(vars, exp, body) => {
+            let vals = value_of(exp, env)?;
+            let mut remain_vals = vals;
+            let mut new_env = env.clone(); 
+            for var in vars {
+                let val = remain_vals.car()?;
+                new_env = new_env.extend(var.to_string(), val);
+                remain_vals = remain_vals.cdr()?;
+            }
+            if remain_vals.is_null()? == false {
+                return Err(RuntimeError::UnpackError(format!("Unpack: length inconsistent")));
+            }
+            value_of(body, &new_env)
         }
     }
 }

@@ -1,29 +1,32 @@
+use core::fmt;
+use std::rc::Rc;
+
 use crate::err::RuntimeError;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ExpVal {
     Int(i32),
     Bool(bool),
+    List(Option<Rc<ListNode>>)
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum DenVal {
-    Int(i32),
-    Bool(bool),
+#[derive(Debug, PartialEq)]
+pub struct ListNode {
+    pub head: ExpVal,
+    pub tail: Option<Rc<ListNode>>,
 }
+
+pub type DenVal = ExpVal;
 
 impl ExpVal {
-    // num-val: Int -> ExpVal
     pub fn num_val(num: i32) -> ExpVal {
         ExpVal::Int(num)
     }
 
-    // bool-val: Bool -> ExpVal
     pub fn bool_val(b: bool) -> ExpVal {
         ExpVal::Bool(b)
     }
 
-    // expval->num: ExpVal -> Int
     pub fn expval_to_num(&self) -> Result<i32, RuntimeError> {
         match self {
             ExpVal::Int(num) => Ok(*num),
@@ -31,11 +34,73 @@ impl ExpVal {
         }
     }
 
-    // expval->bool: ExpVal -> Bool
     pub fn expval_to_bool(&self) -> Result<bool, RuntimeError> {
         match self {
             ExpVal::Bool(b) => Ok(*b),
             _ => Err(RuntimeError::TypeError(format!("Expected Bool, but got {:?}", self)))
+        }
+    }
+
+    pub fn empty_list() -> ExpVal {
+        ExpVal::List(None)
+    }
+
+    pub fn cons(head: ExpVal, tail_val: ExpVal) -> Result<ExpVal, RuntimeError> {
+        match tail_val {
+            ExpVal::List(tail) => {
+                let new_node = ListNode {head, tail};
+                Ok(ExpVal::List(Some(Rc::new(new_node))))
+            }
+            _ => Err(RuntimeError::TypeError(format!("Expected List, but got {:?}", tail_val)))
+        }
+    }
+
+    pub fn car(&self) -> Result<ExpVal, RuntimeError> {
+        match self {
+            ExpVal::List(Some(node)) => {
+                Ok(node.head.clone())
+            }
+            ExpVal::List(None) => Err(RuntimeError::EmptyListError(format!("Car: Empty list"))),
+            _ => Err(RuntimeError::TypeError(format!("Expected List, but got {:?}", self)))
+        }
+    }
+
+    pub fn cdr(&self) -> Result<ExpVal, RuntimeError> {
+        match self {
+            ExpVal::List(Some(node)) => {
+                Ok(ExpVal::List(node.tail.clone()))
+            }
+            ExpVal::List(None) => Err(RuntimeError::EmptyListError(format!("Cdr: Empty list"))),
+            _ => Err(RuntimeError::TypeError(format!("Expected List, but got {:?}", self)))
+        }
+    }
+
+    pub fn is_null(&self) -> Result<bool, RuntimeError> {
+        match self {
+            ExpVal::List(None) => Ok(true),
+            ExpVal::List(Some(_)) => Ok(false),
+            _ => Err(RuntimeError::TypeError(format!("Expected List, but got {:?}", self)))
+        }
+    }
+}
+
+impl fmt::Display for ExpVal {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ExpVal::Int(n) => write!(f, "{}", n),
+            ExpVal::Bool(b) => write!(f, "{}", b),
+            ExpVal::List(l) => {
+                write!(f, "(")?;
+                let mut current = l;
+                let mut first = true;
+                while let Some(node) = current {
+                    if !first { write!(f, " ")?; }
+                    write!(f, "{}", node.head)?;
+                    current = &node.tail;
+                    first = false;
+                }
+                write!(f, ")")
+            }
         }
     }
 }
