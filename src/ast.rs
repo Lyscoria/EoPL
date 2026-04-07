@@ -6,6 +6,13 @@ pub struct Program {
 }
 
 #[derive(Debug, Clone)]
+pub struct RecProc {
+    pub name: String,
+    pub vars: Vec<String>,
+    pub body: Exp,
+}
+
+#[derive(Debug, Clone)]
 pub enum Exp {
     ConstExp(i32),
 
@@ -43,6 +50,8 @@ pub enum Exp {
     ProcExp(Vec<String>, Box<Exp>),
     CallExp(Box<Exp>, Vec<Exp>),
     LetProcExp(String, Vec<String>, Box<Exp>, Box<Exp>),
+
+    LetRecExp(Vec<RecProc>, Box<Exp>),
 }
 
 impl fmt::Display for Exp {
@@ -126,7 +135,7 @@ impl fmt::Display for Exp {
                 }
                 write!(f, ")")
             }
-            
+
             Exp::LetProcExp(name, vars, body, let_body) => {
                 write!(f, "letproc {}(", name)?;
                 for (i, var) in vars.iter().enumerate() {
@@ -134,6 +143,19 @@ impl fmt::Display for Exp {
                     write!(f, "{}", var)?;
                 }
                 write!(f, ") = {} in {}", body, let_body)
+            }
+
+            Exp::LetRecExp(procs, body) => {
+                write!(f, "letrec")?;
+                for b in procs {
+                    write!(f, " {}(", b.name)?;
+                    for (i, var) in b.vars.iter().enumerate() {
+                        if i > 0 { write!(f, ", ")?; }
+                        write!(f, "{}", var)?;
+                    }
+                    write!(f, ") = {}", b.body)?;
+                }
+                write!(f, " in {}", body)
             }
         }
     }

@@ -191,5 +191,10 @@ pub fn value_of(exp: &Exp, env: &Env) -> Result<ExpVal, RuntimeError> {
             let new_env = env.extend(name.to_string(), proc);
             value_of(let_body, &new_env)
         }
+
+        Exp::LetRecExp(procs, body) => {
+            let new_env = env.extend_rec(procs);
+            value_of(body, &new_env)
+        }
     }
 }

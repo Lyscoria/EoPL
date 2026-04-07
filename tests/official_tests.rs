@@ -94,3 +94,14 @@ let fix = proc (f)
 in let t4m = proc (f) proc(x) if zero?(x) then 0 else -((f -(x,1)), minus(4))
 in let times4 = (fix t4m)
    in (times4 3)", 12);
+
+eopl_test!(simple_letrec_1, "letrec f(x) = -(x,1) in (f 33)", 32);
+eopl_test!(simple_letrec_2, "letrec f(x) = if zero?(x) then 0 else -((f -(x,1)), minus(2)) in (f 4)", 8);
+eopl_test!(simple_letrec_3, "let m = minus(5) in letrec f(x) = if zero?(x) then 0 else -((f -(x,1)), m) in (f 4)", 20);
+
+eopl_test!(fact_of_6, "letrec fact(x) = if zero?(x) then 1 else *(x, (fact -(x,1))) in (fact 6)", 720);
+
+eopl_test!(ho_nested_letrecs, "
+letrec even(odd) = proc(x) if zero?(x) then 1 else (odd -(x,1))
+   in letrec odd(x) = if zero?(x) then 0 else ((even odd) -(x,1))
+   in (odd 13)", 1);

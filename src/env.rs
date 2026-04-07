@@ -1,5 +1,5 @@
 use std::rc::Rc;
-use crate::{err::RuntimeError, val::ExpVal};
+use crate::{ast::{Exp, RecProc}, err::RuntimeError, val::{ExpVal, Proc}};
 
 #[derive(Debug, Clone)]
 pub struct Env(Rc<EnvInner>);
@@ -8,20 +8,34 @@ pub struct Env(Rc<EnvInner>);
 enum EnvInner {
     EmptyEnv,
     ExtendEnv(String, ExpVal, Env),
+    Rec(Vec<RecDef>, Env),
+}
+
+#[derive(Debug, Clone)]
+struct RecDef {
+    name: String,
+    vars: Vec<String>,
+    body: Exp,
 }
 
 impl Env {
-    // empty-env: () -> Env
     pub fn empty() -> Self {
         Env(Rc::new(EnvInner::EmptyEnv))
     }
 
-    // extend-env: Env * Var * Val -> Env
     pub fn extend(&self, var: String, val: ExpVal) -> Self {
         Env(Rc::new(EnvInner::ExtendEnv(var, val, self.clone())))
     }
 
-    // apply-env: Env * Var -> Val
+    pub fn extend_rec(&self, procs: &[RecProc]) -> Self {
+        let defs = procs.iter().map(|p| RecDef {
+            name: p.name.clone(),
+            vars: p.vars.clone(),
+            body: p.body.clone(),
+        }).collect();
+        Env(Rc::new(EnvInner::Rec(defs, self.clone())))
+    }
+
     pub fn apply(&self, search_var: &str) -> Result<ExpVal, RuntimeError> {
         match &*self.0 {
             EnvInner::EmptyEnv => Err(RuntimeError::NoBindingFound(
@@ -33,10 +47,20 @@ impl Env {
                     saved_env.apply(search_var)
                 }
             }
+            EnvInner::Rec(defs, env) => {
+                if let Some(def) = defs.iter().find(|d| d.name == search_var) {
+                    Ok(ExpVal::Proc(Proc {
+                        vars: def.vars.clone(),
+                        body: def.body.clone(),
+                        env: self.clone(),
+                    }))
+                } else {
+                    env.apply(search_var)
+                }
+            }
         }
     }
 
-    // empty-env?: Env -> Bool
     pub fn is_empty_env(&self) -> bool {
         match &*self.0 {
             EnvInner::EmptyEnv => true,
@@ -44,7 +68,6 @@ impl Env {
         }
     }
 
-    // has-binding?: Env * Var -> Bool
     pub fn has_binding(&self, var: &str) -> bool {
         match self.apply(var) {
             Ok(_) => true,
