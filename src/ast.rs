@@ -40,8 +40,9 @@ pub enum Exp {
     
     UnpackExp(Vec<String>, Box<Exp>, Box<Exp>),
 
-    ProcExp(String, Box<Exp>),
-    CallExp(Box<Exp>, Box<Exp>),
+    ProcExp(Vec<String>, Box<Exp>),
+    CallExp(Box<Exp>, Vec<Exp>),
+    LetProcExp(String, Vec<String>, Box<Exp>, Box<Exp>),
 }
 
 impl fmt::Display for Exp {
@@ -109,8 +110,31 @@ impl fmt::Display for Exp {
                 write!(f, " = {} in {}", e, body)
             }
 
-            Exp::ProcExp(var, body) => write!(f, "proc({}) {}", var, body),
-            Exp::CallExp(rator, rand) => write!(f, "({} {})", rator, rand),
+            Exp::ProcExp(vars, body) => {
+                write!(f, "proc(")?;
+                for (i, var) in vars.iter().enumerate() {
+                    if i > 0 { write!(f, ", ")?; }
+                    write!(f, "{}", var)?;
+                }
+                write!(f, ") {}", body)
+            }
+
+            Exp::CallExp(rator, rands) => {
+                write!(f, "({}", rator)?;
+                for rand in rands {
+                    write!(f, " {}", rand)?;
+                }
+                write!(f, ")")
+            }
+            
+            Exp::LetProcExp(name, vars, body, let_body) => {
+                write!(f, "letproc {}(", name)?;
+                for (i, var) in vars.iter().enumerate() {
+                    if i > 0 { write!(f, ", ")?; }
+                    write!(f, "{}", var)?;
+                }
+                write!(f, ") = {} in {}", body, let_body)
+            }
         }
     }
 }

@@ -87,11 +87,14 @@ Exp: Exp = {
   "unpack" <ids: Ident*> "=" <exp: Exp> "in" <body: Exp> => 
     Exp::UnpackExp(ids, Box::new(exp), Box::new(body)),
 
-  "proc" "(" <var: Ident> ")" <body: Exp> =>
-    Exp::ProcExp(var, Box::new(body)),
+  "proc" "(" <vars: Comma<Ident>> ")" <body: Exp> =>
+    Exp::ProcExp(vars, Box::new(body)),
 
-  "(" <rator: Exp> <rand: Exp> ")" =>
-    Exp::CallExp(Box::new(rator), Box::new(rand)),
+  "(" <rator: Exp> <rands: Exp*> ")" =>
+    Exp::CallExp(Box::new(rator), rands),
+
+  "letproc" <name: Ident> "(" <vars: Comma<Ident>> ")" "=" <body: Exp> "in" <let_body: Exp> =>
+    Exp::LetProcExp(name, vars, Box::new(body), Box::new(let_body)),
 
 }
 

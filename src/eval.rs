@@ -160,19 +160,36 @@ pub fn value_of(exp: &Exp, env: &Env) -> Result<ExpVal, RuntimeError> {
             value_of(body, &new_env)
         }
 
-        Exp::ProcExp(var, body) => {
+        Exp::ProcExp(vars, body) => {
             Ok(ExpVal::Proc(Proc{
-                var: var.clone(), 
+                vars: vars.clone(), 
                 body: *body.clone(),
                 env: env.clone()
             }))
         }
 
-        Exp::CallExp(rator, rand) => {
+        Exp::CallExp(rator, rands) => {
             let proc = value_of(rator, env)?.as_proc()?;
-            let arg = value_of(rand, env)?;
-            let new_env = proc.env.extend(proc.var, arg);
+            let mut args = Vec::new();
+            for rand in rands {
+                args.push(value_of(rand, env)?);
+            }
+            if proc.vars.len() != args.len() {
+                return Err(RuntimeError::ArgNumberError(
+                    format!("Expected {} args, but got {}", proc.vars.len(), args.len())));
+            }
+            let mut new_env = proc.env.clone();
+            for (var, val) in proc.vars.iter().zip(args.into_iter()) {
+                new_env = new_env.extend(var.to_string(), val);
+            }
             value_of(&proc.body, &new_env)
+        }
+
+        Exp::LetProcExp(name, vars, body, let_body) => {
+            let proc = ExpVal::Proc(Proc{
+                vars: vars.clone(), body: *body.clone(), env: env.clone()});
+            let new_env = env.extend(name.to_string(), proc);
+            value_of(let_body, &new_env)
         }
     }
 }

@@ -19,7 +19,7 @@ pub struct ListNode {
 
 #[derive(Debug, Clone)]
 pub struct Proc {
-    pub var: String,
+    pub vars: Vec<String>,
     pub body: Exp,
     pub env: Env,
 }
@@ -101,7 +101,12 @@ impl ExpVal {
 
 impl fmt::Display for Proc {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "proc({}) {}", self.var, self.body)
+        write!(f, "proc(")?;
+        for (i, var) in self.vars.iter().enumerate() {
+            if i > 0 { write!(f, ", ")?; }
+            write!(f, "{}", var)?;
+        }
+        write!(f, ") {}", self.body)
     }
 }
 
