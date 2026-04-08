@@ -5,4 +5,4 @@ pub mod ast;
 pub mod val;
 pub mod err;
 pub mod env;
-pub mod eval;
+pub mod interp;

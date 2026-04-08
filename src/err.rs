@@ -5,6 +5,6 @@ pub enum RuntimeError {
     EmptyListError(String),
     CondError(String),
     UnpackError(String),
-    DivisonByZero(String),
+    DivisionByZero(String),
     ArgNumberError(String),
 }

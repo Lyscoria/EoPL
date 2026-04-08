@@ -1,7 +1,7 @@
 use std::env::args;
 use std::fs::read_to_string;
 use eopl::grammar::ProgramParser;
-use eopl::eval::value_of_program;
+use eopl::interp::value_of_program;
 
 fn main() {
     let mut args = args();

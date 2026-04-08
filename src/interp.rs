@@ -41,7 +41,7 @@ pub fn value_of(exp: &Exp, env: &Env) -> Result<ExpVal, RuntimeError> {
             let val1 = value_of(exp1, env)?;
             let val2 = value_of(exp2, env)?;
             if val2.as_num()? == 0 {
-                return Err(RuntimeError::DivisonByZero("Division by zero".to_string()));
+                return Err(RuntimeError::DivisionByZero("Division by zero".to_string()));
             }
             Ok(ExpVal::Int(val1.as_num()? / val2.as_num()?))
         }

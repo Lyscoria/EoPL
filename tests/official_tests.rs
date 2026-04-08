@@ -1,5 +1,5 @@
 use eopl::grammar::ProgramParser;
-use eopl::eval::value_of_program;
+use eopl::interp::value_of_program;
 
 #[derive(Debug)]
 enum Expected {
