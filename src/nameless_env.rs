@@ -5,7 +5,7 @@ use crate::val::{ExpVal, NamelessProc};
 use crate::err::RuntimeError;
 
 #[derive(Debug, Clone)]
-pub struct NamelessEnv(Rc<NamelessEnvInner>);
+pub struct NamelessEnv(pub Rc<NamelessEnvInner>);
 
 #[derive(Debug, Clone)]
 pub enum NamelessEnvInner {

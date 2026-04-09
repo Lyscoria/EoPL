@@ -64,8 +64,11 @@ impl ExpVal {
         }
     }
 
-    pub fn nameless_proc(arg_num: usize, body: NamelessExp, env: NamelessEnv) -> ExpVal {
-        ExpVal::NamelessProc(NamelessProc { arg_num, body, env })
+    pub fn as_nameless_proc(&self) -> Result<NamelessProc, RuntimeError> {
+        match self {
+            ExpVal::NamelessProc(f) => Ok(f.clone()),
+            _ => Err(RuntimeError::TypeError(format!("Expected Proc, but got {:?}", self)))
+        }
     }
 
     pub fn empty_list() -> ExpVal {
