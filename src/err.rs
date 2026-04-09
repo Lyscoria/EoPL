@@ -8,3 +8,8 @@ pub enum RuntimeError {
     DivisionByZero(String),
     ArgNumberError(String),
 }
+
+#[derive(Debug)]
+pub enum TranslateError {
+    NoBindingFound(String),
+}

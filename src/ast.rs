@@ -37,14 +37,11 @@ pub enum Exp {
     PrintExp(Box<Exp>),
 
     IfExp(Box<Exp>, Box<Exp>, Box<Exp>),
+    CondExp(Vec<(Box<Exp>, Box<Exp>)>),
 
     VarExp(String),
-
-    CondExp(Vec<(Box<Exp>, Box<Exp>)>),
-    
     LetExp(Vec<(String, Box<Exp>)>, Box<Exp>),
     LetStarExp(Vec<(String, Box<Exp>)>, Box<Exp>),
-    
     UnpackExp(Vec<String>, Box<Exp>, Box<Exp>),
 
     ProcExp(Vec<String>, Box<Exp>),
