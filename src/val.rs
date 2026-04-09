@@ -1,7 +1,7 @@
 use core::fmt;
 use std::rc::Rc;
 
-use crate::{ast::Exp, env::Env, err::RuntimeError};
+use crate::{ast::Exp, env::Env, err::RuntimeError, nameless_ast::NamelessExp, nameless_env::NamelessEnv};
 
 #[derive(Debug, Clone)]
 pub enum ExpVal {
@@ -9,6 +9,7 @@ pub enum ExpVal {
     Bool(bool),
     List(Option<Rc<ListNode>>),
     Proc(Proc),
+    NamelessProc(NamelessProc),
 }
 
 #[derive(Debug)]
@@ -22,6 +23,13 @@ pub struct Proc {
     pub vars: Vec<String>,
     pub body: Exp,
     pub env: Env,
+}
+
+#[derive(Debug, Clone)]
+pub struct NamelessProc {
+    pub arg_num: usize,
+    pub body: NamelessExp,
+    pub env: NamelessEnv,
 }
 
 pub type DenVal = ExpVal;
@@ -54,6 +62,10 @@ impl ExpVal {
             ExpVal::Proc(f) => Ok(f.clone()),
             _ => Err(RuntimeError::TypeError(format!("Expected Proc, but got {:?}", self)))
         }
+    }
+
+    pub fn nameless_proc(arg_num: usize, body: NamelessExp, env: NamelessEnv) -> ExpVal {
+        ExpVal::NamelessProc(NamelessProc { arg_num, body, env })
     }
 
     pub fn empty_list() -> ExpVal {
@@ -110,6 +122,12 @@ impl fmt::Display for Proc {
     }
 }
 
+impl fmt::Display for NamelessProc {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "proc(args:{}) {{ {} }}", self.arg_num, self.body)
+    }
+}
+
 impl fmt::Display for ExpVal {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -128,6 +146,7 @@ impl fmt::Display for ExpVal {
                 write!(f, ")")
             }
             ExpVal::Proc(p) => write!(f, "{}", p),
+            ExpVal::NamelessProc(p) => write!(f, "{}", p),
         }
     }
 }

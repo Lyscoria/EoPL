@@ -60,18 +60,4 @@ impl Env {
             }
         }
     }
-
-    pub fn is_empty_env(&self) -> bool {
-        match &*self.0 {
-            EnvInner::EmptyEnv => true,
-            _ => false,
-        }
-    }
-
-    pub fn has_binding(&self, var: &str) -> bool {
-        match self.apply(var) {
-            Ok(_) => true,
-            _ => false,
-        }
-    }
 }

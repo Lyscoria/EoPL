@@ -1,39 +1,59 @@
-use crate::val::ExpVal;
+use std::rc::Rc;
+
+use crate::nameless_ast::NamelessRecProc;
+use crate::val::{ExpVal, NamelessProc};
 use crate::err::RuntimeError;
 
 #[derive(Debug, Clone)]
-pub struct NamelessEnv {
-    pub scopes: Vec<Vec<ExpVal>>,
+pub struct NamelessEnv(Rc<NamelessEnvInner>);
+
+#[derive(Debug, Clone)]
+pub enum NamelessEnvInner {
+    EmptyEnv,
+    ExtendEnv(Vec<ExpVal>, NamelessEnv),
+    Rec(Vec<NamelessRecProc>, NamelessEnv),
 }
 
 impl NamelessEnv {
     pub fn empty() -> Self {
-        NamelessEnv {
-            scopes: Vec::new(),
-        }
+        NamelessEnv(Rc::new(NamelessEnvInner::EmptyEnv))
     }
 
     pub fn extend(&self, vals: Vec<ExpVal>) -> Self {
-        let mut new_scopes = self.scopes.clone();
-        new_scopes.insert(0, vals);
-        NamelessEnv {
-            scopes: new_scopes,
-        }
+        NamelessEnv(Rc::new(NamelessEnvInner::ExtendEnv(vals, self.clone())))
     }
 
     pub fn apply(&self, depth: usize, offset: usize) -> Result<ExpVal, RuntimeError> {
-        self.scopes.get(depth) 
-            .and_then(|scope| scope.get(offset))
-            .cloned()
-            .ok_or_else(|| {
-                RuntimeError::NoBindingFound(format!(
-                    "Nameless lookup failed at depth {}, offset {}",
-                    depth, offset
-                ))
-            })
-    }
+        match (&*self.0, depth) {
+            (NamelessEnvInner::EmptyEnv, _) => {
+                Err(RuntimeError::NoBindingFound(format!("Address depth {} out of range", depth)))
+            }
+            
+            (NamelessEnvInner::ExtendEnv(vals, _), 0) => {
+                vals.get(offset)
+                    .cloned()
+                    .ok_or_else(|| RuntimeError::NoBindingFound(format!(
+                        "Address offset {} out of range", offset)))
+            }
+            
+            (NamelessEnvInner::ExtendEnv(_, env), d) => {
+                env.apply(d - 1, offset)
+            }
 
-    pub fn apply_val(&self, depth: usize, offset: usize) -> Result<ExpVal, RuntimeError> {
-        self.apply(depth, offset)
+            (NamelessEnvInner::Rec(procs, env), d) => {
+                if d == 0 {
+                    let proc_def = procs.get(offset).ok_or_else(|| {
+                        RuntimeError::NoBindingFound(format!("Rec offset {} out of range", offset))
+                    })?;
+                    Ok(ExpVal::NamelessProc(NamelessProc {
+                        arg_num: proc_def.arg_num,
+                        body: proc_def.body.clone(),
+                        env: self.clone()
+                    }))
+                } else {
+                    env.apply(d - 1, offset)
+                }
+            }
+        }
     }
 }
