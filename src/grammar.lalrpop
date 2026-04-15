@@ -18,6 +18,15 @@ Comma<T>: Vec<T> = {
   }
 };
 
+Comma_semi<T>: Vec<T> = {
+  <mut v: (<T> ";")*> <e: T?> => {
+    if let Some(last) = e {
+      v.push(last);
+    }
+    v
+  }
+};
+
 Binding: (String, Box<Exp>) = {
   <id: Ident> "=" <exp: Exp> => (id, Box::new(exp)),
 };
@@ -102,6 +111,8 @@ Exp: Exp = {
     Exp::LetProcExp(name, vars, Box::new(body), Box::new(let_body)),
 
   "letrec" <recprocs: RecProc*> "in" <body: Exp> => Exp::LetRecExp(recprocs, Box::new(body)),
+
+  "begin" <exps: Comma_semi<Exp>> "end" => Exp::BeginExp(exps),
 }
 
 Number: i32 = <num: IntConst> => <>;

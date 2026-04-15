@@ -52,6 +52,8 @@ pub enum Exp {
     LetProcExp(String, Vec<String>, Box<Exp>, Box<Exp>),
 
     LetRecExp(Vec<RecProc>, Box<Exp>),
+
+    BeginExp(Vec<Exp>),
 }
 
 impl fmt::Display for Exp {
@@ -156,6 +158,15 @@ impl fmt::Display for Exp {
                     write!(f, ") = {}", b.body)?;
                 }
                 write!(f, " in {}", body)
+            }
+
+            Exp::BeginExp(exps) => {
+                write!(f, "list(")?;
+                for (i, e) in exps.iter().enumerate() {
+                    if i > 0 { write!(f, "; ")?; }
+                    write!(f, "{}", e)?;
+                }
+                write!(f, ")")
             }
         }
     }

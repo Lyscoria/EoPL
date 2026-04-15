@@ -7,4 +7,5 @@ pub enum RuntimeError {
     UnpackError(String),
     DivisionByZero(String),
     ArgNumberError(String),
+    BeginError,
 }

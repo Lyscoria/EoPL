@@ -196,5 +196,10 @@ pub fn value_of(exp: &Exp, env: &Env) -> Result<ExpVal, RuntimeError> {
             let new_env = env.extend_rec(procs);
             value_of(body, &new_env)
         }
+
+        Exp::BeginExp(exps) => {
+            exps.iter().map(|e| value_of(e, env)).last()
+                .ok_or_else(|| RuntimeError::BeginError)?
+        }
     }
 }
