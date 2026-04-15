@@ -8,4 +8,5 @@ pub enum RuntimeError {
     DivisionByZero(String),
     ArgNumberError(String),
     BeginError,
+    AddressError(String),
 }

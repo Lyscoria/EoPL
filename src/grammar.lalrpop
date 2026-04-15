@@ -19,10 +19,8 @@ Comma<T>: Vec<T> = {
 };
 
 Comma_semi<T>: Vec<T> = {
-  <mut v: (<T> ";")*> <e: T?> => {
-    if let Some(last) = e {
-      v.push(last);
-    }
+  <mut v: (<T> ";")*> <e: T> => {
+    v.push(e);
     v
   }
 };
@@ -113,6 +111,12 @@ Exp: Exp = {
   "letrec" <recprocs: RecProc*> "in" <body: Exp> => Exp::LetRecExp(recprocs, Box::new(body)),
 
   "begin" <exps: Comma_semi<Exp>> "end" => Exp::BeginExp(exps),
+
+  "newref" "(" <exp: Exp> ")" => Exp::NewRefExp(Box::new(exp)),
+
+  "deref" "(" <exp: Exp> ")" => Exp::DeRefExp(Box::new(exp)),
+
+  "setref" "(" <exp1: Exp> "," <exp2: Exp> ")" => Exp::SetRefExp(Box::new(exp1), Box::new(exp2)),
 }
 
 Number: i32 = <num: IntConst> => <>;
@@ -120,7 +124,7 @@ Number: i32 = <num: IntConst> => <>;
 Ident: String = r"[_a-zA-Z][_a-zA-Z0-9]*" => <>.to_string();
 
 IntConst: i32 = {
-  r"[1-9][0-9]*" => i32::from_str_radix(<>, 10).unwrap(),
-  r"0[0-7]*" => i32::from_str_radix(<>, 8).unwrap(),
-  r"0[xX][0-9a-fA-F]+" => i32::from_str_radix(&<>[2..], 16).unwrap(),
+  r"-?[1-9][0-9]*" => i32::from_str_radix(<>, 10).unwrap(),
+  r"-?0[0-7]*" => i32::from_str_radix(<>, 8).unwrap(),
+  r"-?0[xX][0-9a-fA-F]+" => i32::from_str_radix(&<>[2..], 16).unwrap(),
 }

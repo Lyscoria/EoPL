@@ -37,30 +37,29 @@ pub enum Exp {
     PrintExp(Box<Exp>),
 
     IfExp(Box<Exp>, Box<Exp>, Box<Exp>),
+    CondExp(Vec<(Box<Exp>, Box<Exp>)>),
 
     VarExp(String),
-
-    CondExp(Vec<(Box<Exp>, Box<Exp>)>),
-    
     LetExp(Vec<(String, Box<Exp>)>, Box<Exp>),
     LetStarExp(Vec<(String, Box<Exp>)>, Box<Exp>),
-    
     UnpackExp(Vec<String>, Box<Exp>, Box<Exp>),
 
     ProcExp(Vec<String>, Box<Exp>),
     CallExp(Box<Exp>, Vec<Exp>),
     LetProcExp(String, Vec<String>, Box<Exp>, Box<Exp>),
-
     LetRecExp(Vec<RecProc>, Box<Exp>),
 
     BeginExp(Vec<Exp>),
+
+    NewRefExp(Box<Exp>),
+    DeRefExp(Box<Exp>),
+    SetRefExp(Box<Exp>, Box<Exp>),
 }
 
 impl fmt::Display for Exp {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Exp::ConstExp(n) => write!(f, "{}", n),
-            Exp::VarExp(v) => write!(f, "{}", v),
 
             Exp::MinusExp(e) => write!(f, "minus({})", e),
             Exp::DiffExp(e1, e2) => write!(f, "-({}, {})", e1, e2),
@@ -89,7 +88,8 @@ impl fmt::Display for Exp {
 
             Exp::PrintExp(e) => write!(f, "print({})", e),
 
-            Exp::IfExp(e1, e2, e3) => write!(f, "if {} then {} else {}", e1, e2, e3),
+            Exp::IfExp(e1, e2, e3) => 
+                write!(f, "if {} then {} else {}", e1, e2, e3),
             Exp::CondExp(clauses) => {
                 write!(f, "cond")?;
                 for (test, res) in clauses {
@@ -98,6 +98,7 @@ impl fmt::Display for Exp {
                 write!(f, " end")
             }
 
+            Exp::VarExp(v) => write!(f, "{}", v),
             Exp::LetExp(bindings, body) => {
                 write!(f, "let")?;
                 for (var, e) in bindings {
@@ -112,7 +113,6 @@ impl fmt::Display for Exp {
                 }
                 write!(f, " in {}", body)
             }
-
             Exp::UnpackExp(vars, e, body) => {
                 write!(f, "unpack")?;
                 for var in vars {
@@ -168,6 +168,10 @@ impl fmt::Display for Exp {
                 }
                 write!(f, ")")
             }
+
+            Exp::NewRefExp(exp) => write!(f, "newref({})", exp),
+            Exp::DeRefExp(exp) => write!(f, "deref({})", exp),
+            Exp::SetRefExp(exp1, exp2) => write!(f, "setref({}, {})", exp1, exp2),
         }
     }
 }

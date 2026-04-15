@@ -9,6 +9,7 @@ pub enum ExpVal {
     Bool(bool),
     List(Option<Rc<ListNode>>),
     Proc(Proc),
+    Ref(usize),
 }
 
 #[derive(Debug)]
@@ -53,6 +54,13 @@ impl ExpVal {
         match self {
             ExpVal::Proc(f) => Ok(f.clone()),
             _ => Err(RuntimeError::TypeError(format!("Expected Proc, but got {:?}", self)))
+        }
+    }
+
+    pub fn as_ref(&self) -> Result<usize, RuntimeError> {
+        match self {
+            ExpVal::Ref(n) => Ok(*n),
+            _ => Err(RuntimeError::TypeError(format!("Expected Ref, but got {:?}", self)))
         }
     }
 
@@ -128,6 +136,7 @@ impl fmt::Display for ExpVal {
                 write!(f, ")")
             }
             ExpVal::Proc(p) => write!(f, "{}", p),
+            ExpVal::Ref(u) => write!(f, "ref({})", u),
         }
     }
 }
