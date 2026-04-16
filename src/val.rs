@@ -25,8 +25,6 @@ pub struct Proc {
     pub env: Env,
 }
 
-pub type DenVal = ExpVal;
-
 impl ExpVal {
     pub fn num_val(num: i32) -> ExpVal {
         ExpVal::Int(num)

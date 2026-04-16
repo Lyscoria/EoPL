@@ -15,3 +15,5 @@
 2026/4/9 在当前的基础上实现了 Lexical Addressing，暂时放在 lexaddr 分支
 
 2026/4/15 实现了 EXPLICIT-REFS 语言，附带习题 4.9 4.10 4.11
+
+2026/4/16 照习题 4.20 的模式部分实现了了一下 IMPLICIT-REFS，当前仅有 let mut 表达式定义的变量是可变的

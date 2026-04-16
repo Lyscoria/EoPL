@@ -51,9 +51,8 @@ pub enum Exp {
 
     BeginExp(Vec<Exp>),
 
-    NewRefExp(Box<Exp>),
-    DeRefExp(Box<Exp>),
-    SetRefExp(Box<Exp>, Box<Exp>),
+    LetMutExp(Vec<(String, Box<Exp>)>, Box<Exp>),
+    AssignExp(String, Box<Exp>),
 }
 
 impl fmt::Display for Exp {
@@ -169,9 +168,15 @@ impl fmt::Display for Exp {
                 write!(f, ")")
             }
 
-            Exp::NewRefExp(exp) => write!(f, "newref({})", exp),
-            Exp::DeRefExp(exp) => write!(f, "deref({})", exp),
-            Exp::SetRefExp(exp1, exp2) => write!(f, "setref({}, {})", exp1, exp2),
+            Exp::LetMutExp(bindings, body) => {
+                write!(f, "let mut")?;
+                for (var, e) in bindings {
+                    write!(f, " {} = {}", var, e)?;
+                }
+                write!(f, " in {}", body)
+            }
+
+            Exp::AssignExp(var, exp) => write!(f, "set {} = {}", var, exp),
         }
     }
 }

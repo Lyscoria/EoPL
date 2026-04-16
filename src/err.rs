@@ -9,4 +9,5 @@ pub enum RuntimeError {
     ArgNumberError(String),
     BeginError,
     AddressError(String),
+    SetError(String),
 }

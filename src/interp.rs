@@ -13,8 +13,6 @@ pub fn value_of(exp: &Exp, env: &Env, store: &mut Store) -> Result<ExpVal, Runti
     match exp {
         Exp::ConstExp(num) => Ok(ExpVal::Int(*num)),
 
-        Exp::VarExp(var) => env.apply(var),
-
         Exp::MinusExp(exp1) => {
             let val = value_of(exp1, env, store)?;
             Ok(ExpVal::Int(-val.as_num()?))
@@ -128,6 +126,14 @@ pub fn value_of(exp: &Exp, env: &Env, store: &mut Store) -> Result<ExpVal, Runti
             Err(RuntimeError::CondError("No cond clause matched.".to_string()))
         }
 
+        Exp::VarExp(var) => {
+            let val = env.apply(var)?;
+            match val {
+                ExpVal::Ref(addr) => store.deref(addr),
+                _ => Ok(val),
+            }
+        }
+
         Exp::LetExp(bindings, body) => {
             let mut new_env = env.clone();
             for (var, exp) in bindings {
@@ -206,21 +212,19 @@ pub fn value_of(exp: &Exp, env: &Env, store: &mut Store) -> Result<ExpVal, Runti
             Ok(val)
         }
 
-        Exp::NewRefExp(exp) => {
+        Exp::LetMutExp(bindings, body) => {
+            let mut new_env = env.clone();
+            for (var, exp) in bindings {
+                let val = value_of(exp, env, store)?;
+                let addr = store.newref(val);
+                new_env = new_env.extend(var.to_string(), ExpVal::Ref(addr));
+            }
+            value_of(body, &new_env, store)
+        }
+
+        Exp::AssignExp(var, exp) => {
             let val = value_of(exp, env, store)?;
-            let addr = store.newref(val);
-            Ok(ExpVal::Ref(addr))
-        }
-
-        Exp::DeRefExp(exp) => {
-            let addr = value_of(exp, env, store)?.as_ref()?;
-            let val = store.deref(addr)?;
-            Ok(val)
-        }
-
-        Exp::SetRefExp(exp1, exp2) => {
-            let addr = value_of(exp1, env, store)?.as_ref()?;
-            let val = value_of(exp2, env, store)?;
+            let addr = env.apply(var)?.as_ref()?;
             store.setref(addr, val.clone())?;
             Ok(val)
         }
